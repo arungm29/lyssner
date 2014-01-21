@@ -4,4 +4,4 @@ Lyssner is an omegle-like anonymous chat service. The user can choose to be a li
 
 # Installation
 
-First, install all the node modules using `npm install`. Then, use `node server.js` to get the server running, and open localhost on your browser at port 80. It's as simple as that.
+First, install all the node modules using `npm install`. Then, use `node server.js` to get the server running, and open localhost on your browser on port 80. It's as simple as that.
