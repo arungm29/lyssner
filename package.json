@@ -8,8 +8,7 @@
   },
   "dependencies": {
     "socket.io": "0.9.6",
-    "connect": "1.9.2",
-    "redis": "0.8.3"
+    "connect": "1.9.2"
   },
   "author": "Arun Mahadevan",
   "license": "BSD"

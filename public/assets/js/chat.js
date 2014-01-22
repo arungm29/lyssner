@@ -1,153 +1,164 @@
-
-
-
-
-
-
-    function renderchatpage(chattype) {
+function renderchatpage(chattype) {
+    console.log(chattype);
     $("article").remove();
 
     $('<div class="logwrapper" style="top: 81px;"><div class="logbox"><div id="box" style="position: relative; min-height: 100%;"><div class="logitem"><p class="statuslog">Connecting...</p></div></div></div></div><div class="controlwrapper"><table class="controltable" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="chatmsgcell"><div class="chatmsgwrapper"><textarea id="chatmsg" cols="80" rows="3"></textarea></div></td><td class="sendbthcell"><div class="sendbtnwrapper"><button id="sendbtn">Send<div class="btnkbshortcut">Enter</div></button></div></td></tr></tbody></table></div>').insertAfter('.l-header');
-    $('.l-site-header').css("width","auto");
-    var socket = io.connect('http://localhost');
+    $('.l-site-header').css("width", "auto");
+    var socket = io.connect('http://localhost:8080');
 
-var txt = "";
-var typing = false;
-var timeout = undefined;
+    // Immediately after connecting, identify as a listener or a venter
+    // true is venter
+    // false is listener
+    socket.emit( 'identify', { 'chattype': chattype } );
 
-function timeoutFunction(){
-  typing = false;
-  socket.emit('stoppedtyping', {message: 'Stranger has entered text.'});
-}
+    var txt = "";
+    var typing = false;
+    var timeout = undefined;
 
-
+    function timeoutFunction() {
+        typing = false;
+        socket.emit('stoppedtyping', {
+            message: 'Stranger has entered text.'
+        });
+    }
 
     $("#chatmsg").focus();
-    
-    socket.on('entrance', function  (data) {
-        $(".logitem").replaceWith('<div class="logitem"><p class="statuslog">'+data.message+'</p></div>');
+
+    socket.on('entrance', function (data) {
+        $(".logitem").replaceWith('<div class="logitem"><p class="statuslog">' + data.message + '</p></div>');
     });
-    socket.on('exit', function  (data) {
+
+    socket.on('foundpartner', function (data) {
+        $(".logitem").replaceWith('<div class="logitem"><p class="statuslog">' + data.message + '</p></div>');
+    });
+
+    
+    socket.on('exit', function (data) {
         document.getElementById("box")
-            .innerHTML +='<div class="logitem"><p class="statuslog">'+data.message+'</p></div>';
+            .innerHTML += '<div class="logitem"><p class="statuslog">' + data.message + '</p></div>';
         $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
     });
 
     socket.on('is typing', function (data) {
         if (document.getElementById("typing")) {
-        $("#typing").replaceWith('<div class="logitem" id="typing"><p class="statuslog">'+data.message+'...</p></div>');
-        $(".logbox")
-            .scrollTop($(".logbox")[0].scrollHeight);
-    }
-    else {
-        document.getElementById("box")
-            .innerHTML +='<div class="logitem" id="typing"><p class="statuslog">'+data.message+'...</p></div>';
+            $("#typing").replaceWith('<div class="logitem" id="typing"><p class="statuslog">' + data.message + '...</p></div>');
             $(".logbox")
-            .scrollTop($(".logbox")[0].scrollHeight);
-    }
+                .scrollTop($(".logbox")[0].scrollHeight);
+        } else {
+            document.getElementById("box")
+                .innerHTML += '<div class="logitem" id="typing"><p class="statuslog">' + data.message + '...</p></div>';
+            $(".logbox")
+                .scrollTop($(".logbox")[0].scrollHeight);
+        }
     });
 
-    socket.on('clearedtextfield', function() {
+    socket.on('clearedtextfield', function () {
         $("#typing").remove();
         clearTimeout(timeout);
     })
 
     socket.on('stopped', function (data) {
-        $("#typing").replaceWith('<div class="logitem" id="typing"><p class="statuslog">'+data.message+'</p></div>');
+        $("#typing").replaceWith('<div class="logitem" id="typing"><p class="statuslog">' + data.message + '</p></div>');
         $(".logbox")
             .scrollTop($(".logbox")[0].scrollHeight);
     });
-    socket.on('chat', function  (data) {
-    $("#typing")
-                .remove();
-            document.getElementById("box")
-                .innerHTML += '<div class="logitem"><p class="strangermsg"><strong class="msgsource">Stranger:</strong> <span>' + data.message +
-                "</span></p></div>";
-            $(".logbox")
-                .scrollTop($(".logbox")[0].scrollHeight)    });
-
-
-
-
-
-function input() {
-    txt = document.getElementById("chatmsg").value;
-    txt = txt.replace(/^\s+|\s+$/g, "");
-    var escaped = escapeHtml(txt);
-    document.getElementById("chatmsg")
-        .value = "";
-    var new_div = document.createElement("div");
-    new_div.className = "logitem";
-    new_div.innerHTML = '<p class="youmsg"><strong class="msgsource">You:</strong> <span>' + escaped + "</span></p>";
-    if (document.getElementById("typing")) {
-        document.getElementById("box").insertBefore(new_div, document.getElementById("typing"));
+    socket.on('chat', function (data) {
+        $("#typing")
+            .remove();
+        document.getElementById("box")
+            .innerHTML += '<div class="logitem"><p class="strangermsg"><strong class="msgsource">Stranger:</strong> <span>' + data.message +
+            "</span></p></div>";
         $(".logbox")
             .scrollTop($(".logbox")[0].scrollHeight)
-    } else {
-        document.getElementById("box")
-            .innerHTML +=
-            '<div class="logitem"><p class="youmsg"><strong class="msgsource">You:</strong> <span>' + escaped + "</span></p></div>";
-        $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
-    }
-}
+    });
 
-document.getElementById("sendbtn")
-    .onclick = function () {
-    $("#chatmsg")
-        .focus();
-        typing=false;
-        clearTimeout(timeout);
+
+
+
+    function input() {
         txt = document.getElementById("chatmsg").value;
-    txt = txt.replace(/^\s+|\s+$/g, "");
-    var escaped = escapeHtml(txt);
-    if ($("#chatmsg")
-        .val()
-        .match(/^\s*$/));
-    else {
-        input();
-        socket.emit('chat', {message: escaped});
-    }
-};
-
-$("#chatmsg")
-    .keypress(function (e) {
-    if(e.keyCode!=13) {
-    if(typing == false) {
-    typing = true;
-    socket.emit('typing', {message: 'Stranger is typing'});
-    timeout = setTimeout(timeoutFunction, 3000);
-  } else {
-    clearTimeout(timeout);
-    timeout = setTimeout(timeoutFunction, 3000);
-  }
-}
-
-
-
-
-    if ($(this)
-        .val()
-        .match(/^\s*$/) && e.keyCode == 13 && !e.shiftKey) e.preventDefault();
-    else if (e.keyCode == 13 && !e.shiftKey) {
-        typing=false;
-        clearTimeout(timeout);
-        e.preventDefault();
-        txt = document.getElementById("chatmsg").value;
-    txt = txt.replace(/^\s+|\s+$/g, "");
-    var escaped = escapeHtml(txt);
-        input();
-        socket.emit('chat', {message: escaped});
+        txt = txt.replace(/^\s+|\s+$/g, "");
+        var escaped = escapeHtml(txt);
         document.getElementById("chatmsg")
             .value = "";
+        var new_div = document.createElement("div");
+        new_div.className = "logitem";
+        new_div.innerHTML = '<p class="youmsg"><strong class="msgsource">You:</strong> <span>' + escaped + "</span></p>";
+        if (document.getElementById("typing")) {
+            document.getElementById("box").insertBefore(new_div, document.getElementById("typing"));
+            $(".logbox")
+                .scrollTop($(".logbox")[0].scrollHeight)
+        } else {
+            document.getElementById("box")
+                .innerHTML +=
+                '<div class="logitem"><p class="youmsg"><strong class="msgsource">You:</strong> <span>' + escaped + "</span></p></div>";
+            $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
+        }
     }
-});
 
-    $("#chatmsg").keyup(function() {
-    if($(this).val()=="") {
-        socket.emit('clearedtextfield');
-        typing=false;
-    }
-});
+    document.getElementById("sendbtn")
+        .onclick = function () {
+            $("#chatmsg")
+                .focus();
+            typing = false;
+            clearTimeout(timeout);
+            txt = document.getElementById("chatmsg").value;
+            txt = txt.replace(/^\s+|\s+$/g, "");
+            var escaped = escapeHtml(txt);
+            if ($("#chatmsg")
+                .val()
+                .match(/^\s*$/));
+            else {
+                input();
+                socket.emit('chat', {
+                    message: escaped
+                });
+            }
+    };
+
+    $("#chatmsg")
+        .keypress(function (e) {
+            if (e.keyCode != 13) {
+                if (typing == false) {
+                    typing = true;
+                    socket.emit('typing', {
+                        message: 'Stranger is typing'
+                    });
+                    timeout = setTimeout(timeoutFunction, 3000);
+                } else {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(timeoutFunction, 3000);
+                }
+            }
+
+
+
+
+            if ($(this)
+                .val()
+                .match(/^\s*$/) && e.keyCode == 13 && !e.shiftKey) e.preventDefault();
+            else if (e.keyCode == 13 && !e.shiftKey) {
+                typing = false;
+                clearTimeout(timeout);
+                e.preventDefault();
+                txt = document.getElementById("chatmsg").value;
+                txt = txt.replace(/^\s+|\s+$/g, "");
+                var escaped = escapeHtml(txt);
+                input();
+                socket.emit('chat', {
+                    message: escaped
+                });
+                document.getElementById("chatmsg")
+                    .value = "";
+            }
+        });
+
+    $("#chatmsg").keyup(function () {
+        if ($(this).val() == "") {
+            socket.emit('clearedtextfield');
+            typing = false;
+        }
+    });
 
 };
 var hex = new Array("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f");
@@ -165,6 +176,7 @@ function escapeHtml(originalText) {
     }
     return escaped
 }
+
 function escapeHtmlTextArea(originalText) {
     var preescape = "" + originalText;
     var escaped = "";
@@ -189,6 +201,7 @@ function escapeBR(original) {
     }
     return original
 }
+
 function escapeNBSP(original) {
     var thechar = original.charCodeAt(0);
     switch (thechar) {
@@ -198,6 +211,7 @@ function escapeNBSP(original) {
     }
     return original
 }
+
 function escapeTags(original) {
     var thechar = original.charCodeAt(0);
     switch (thechar) {
@@ -414,7 +428,8 @@ function escapeCharOther(original) {
         found = false;
         break
     }
-    if (!found) if (thechar > 127) {
+    if (!found)
+        if (thechar > 127) {
             var c = thechar;
             var a4 = c % 16;
             c = Math.floor(c / 16);
