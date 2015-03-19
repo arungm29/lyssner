@@ -1,5 +1,5 @@
-var vent = $("#vent");
-var listen = $("#listen");
+var vent = document.getElementById("vent");
+var listen = document.getElementById("listen");
 vent.onclick = function() {
     renderchatpage(true);
 }
