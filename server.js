@@ -19,7 +19,7 @@ util.inherits( PartnerListener, EventEmitter );
 
 var app = connect().use(connect.static('public')).listen(80);
 var chat_room = io.listen(app);
-
+var index = -1;
 var venters = [];
 var listeners = [];
 
@@ -32,13 +32,15 @@ chat_room.sockets.on('connection', function (socket) {
         // who are we chatting with
         var partner;
 
+        var wokenUp = false;
+
         // check the opposite queue. if someone is waiting, match them.
         if ( ( chattype ? listeners : venters ).length > 0 ){
             // get the first partner from the array, assign it, and slice it
             // FIFO FTW
             queuedPartner = ( chattype ? listeners : venters ).shift();
             partner = queuedPartner.partnerSocket
-            socket.emit('entrance', {
+            socket.emit('foundpartner', {
                 message: "You're now connected to a " + (!chattype ? 'venter' : 'listener') + "."
             });
             // now we can set up actual chat events.
@@ -50,13 +52,30 @@ chat_room.sockets.on('connection', function (socket) {
         } else {
             // if no one is waiting, we add a custom event listener so we know when we're matched with a partner.
             var partnerListener = new PartnerListener();
+            wokenUp = false;
             // then we add ourselves to the queue, sending a reference to the event listener with it
             ( chattype ? venters : listeners ).push({ 'partnerSocket': socket, 'partnerListener': partnerListener });
             socket.emit('entrance', {
                 message: "We're finding you a " + ( !chattype ? 'venter' : 'listener' ) + "."
             });
 
+            if (!wokenUp) {
+                socket.on('disconnect', function () {
+                    if(chattype) {
+                        venters = venters.filter(function (el) {
+                            return el.partnerSocket !== socket;
+                        });
+                    }
+                    else {
+                        listeners = listeners.filter(function (el) {
+                            return el.partnerSocket !== socket;
+                        });
+                    }
+                });
+            }
+
             partnerListener.once('wakeUp', function ( partnerSocket ) {
+                wokenUp = true;
                 partner = partnerSocket;
                 socket.emit('foundpartner', {
                     message: "You're now connected to a " + (chattype ? 'venter' : 'listener') + "."

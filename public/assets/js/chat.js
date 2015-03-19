@@ -2,9 +2,9 @@ function renderchatpage(chattype) {
     console.log(chattype);
     $("article").remove();
 
-    $('<div class="logwrapper" style="top: 81px;"><div class="logbox"><div id="box" style="position: relative; min-height: 100%;"><div class="logitem"><p class="statuslog">Connecting...</p></div></div></div></div><div class="controlwrapper"><table class="controltable" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="chatmsgcell"><div class="chatmsgwrapper"><textarea id="chatmsg" cols="80" rows="3"></textarea></div></td><td class="sendbthcell"><div class="sendbtnwrapper"><button id="sendbtn">Send<div class="btnkbshortcut">Enter</div></button></div></td></tr></tbody></table></div>').insertAfter('.l-header');
+    $('<div class="logwrapper" style="top: 81px;"><div class="logbox"><div id="box" style="position: relative; min-height: 100%;"><div class="logitem"><p class="statuslog">Connecting...</p></div></div></div></div><div class="controlwrapper"><table class="controltable" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="chatmsgcell"><div class="chatmsgwrapper"><textarea id="chatmsg" cols="80" rows="3" disabled></textarea></div></td><td class="sendbthcell"><div class="sendbtnwrapper"><button id="sendbtn">Send<div class="btnkbshortcut">Enter</div></button></div></td></tr></tbody></table></div>').insertAfter('.l-header');
     $('.l-site-header').css("width", "auto");
-    var socket = io.connect('http://lyssner.arunmahadevan.me');
+    var socket = io.connect('http://lyssner.arunmahadevan.me/');
 
     // Immediately after connecting, identify as a listener or a venter
     // true is venter
@@ -22,14 +22,14 @@ function renderchatpage(chattype) {
         });
     }
 
-    $("#chatmsg").focus();
-
     socket.on('entrance', function (data) {
         $(".logitem").replaceWith('<div class="logitem"><p class="statuslog">' + data.message + '</p></div>');
     });
 
     socket.on('foundpartner', function (data) {
         $(".logitem").replaceWith('<div class="logitem"><p class="statuslog">' + data.message + '</p></div>');
+        document.getElementById("chatmsg").disabled = false;
+        $("#chatmsg").focus();
     });
 
     
