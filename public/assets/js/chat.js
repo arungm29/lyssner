@@ -44,7 +44,7 @@ function renderchatpage(chattype) {
 
     
     socket.on('exit', function (data) {
-        $("#box")
+        document.getElementById("box")
             .innerHTML += '<div class="logitem"><p class="statuslog">' + data.message + '</p></div>';
         $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
         document.getElementById("chatmsg").setAttribute("disabled", "true");
@@ -56,7 +56,7 @@ function renderchatpage(chattype) {
             $(".logbox")
                 .scrollTop($(".logbox")[0].scrollHeight);
         } else {
-            $("#box")
+            document.getElementById("box")
                 .innerHTML += '<div class="logitem" id="typing"><p class="statuslog">' + data.message + '...</p></div>';
             $(".logbox")
                 .scrollTop($(".logbox")[0].scrollHeight);
@@ -76,7 +76,7 @@ function renderchatpage(chattype) {
     socket.on('chat', function (data) {
         $("#typing")
             .remove();
-        $("#box")
+        document.getElementById("box")
             .innerHTML += '<div class="logitem"><p class="strangermsg"><strong class="msgsource">Stranger:</strong> <span>' + data.message +
             "</span></p></div>";
         $(".logbox")
