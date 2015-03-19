@@ -31,14 +31,14 @@ chat_room.sockets.on('connection', function (socket) {
 
         // who are we chatting with
         var partner;
-
+        //to check for the case when the client is in the queue
         var wokenUp = false;
 
         // check the opposite queue. if someone is waiting, match them.
         if ( ( chattype ? listeners : venters ).length > 0 ){
             // get the first partner from the array, assign it, and slice it
             // FIFO FTW
-            queuedPartner = ( chattype ? listeners : venters ).shift();
+            var queuedPartner = ( chattype ? listeners : venters ).shift();
             partner = queuedPartner.partnerSocket
             socket.emit('foundpartner', {
                 message: "You're now connected to a " + (!chattype ? 'venter' : 'listener') + "."
@@ -60,7 +60,9 @@ chat_room.sockets.on('connection', function (socket) {
             });
 
             if (!wokenUp) {
+                //if the client is waiting to be paired and decides to disconnect for whatever reason
                 socket.on('disconnect', function () {
+                    // remove the client from the queue
                     if(chattype) {
                         venters = venters.filter(function (el) {
                             return el.partnerSocket !== socket;
