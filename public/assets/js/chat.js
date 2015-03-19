@@ -109,21 +109,23 @@ function renderchatpage(chattype) {
 
     document.getElementById("sendbtn")
         .onclick = function () {
-            $("#chatmsg")
-                .focus();
-            typing = false;
-            clearTimeout(timeout);
-            txt = document.getElementById("chatmsg").value;
-            txt = txt.replace(/^\s+|\s+$/g, "");
-            var escaped = escapeHtml(txt);
-            if ($("#chatmsg")
-                .val()
-                .match(/^\s*$/));
-            else {
-                input();
-                socket.emit('chat', {
-                    message: escaped
-                });
+            if (!($("#chatmsg").is(':disabled'))) {
+                $("#chatmsg")
+                    .focus();
+                typing = false;
+                clearTimeout(timeout);
+                txt = document.getElementById("chatmsg").value;
+                txt = txt.replace(/^\s+|\s+$/g, "");
+                var escaped = escapeHtml(txt);
+                if ($("#chatmsg")
+                    .val()
+                    .match(/^\s*$/));
+                else {
+                    input();
+                    socket.emit('chat', {
+                        message: escaped
+                    });
+                }
             }
     };
 
