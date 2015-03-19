@@ -92,12 +92,14 @@ chat_room.sockets.on('connection', function (socket) {
                     message: data.message
                 });
             });
+
+            socket.on('disconnect', function () {
+                partner.emit('exit', {
+                    message: 'Your partner has disconnected.'
+                });
+            });
         }
     });
 
-    socket.on('disconnect', function () {
-        socket.broadcast.emit('exit', {
-            message: 'Your partner has disconnected.'
-        });
-    });
+    
 });
