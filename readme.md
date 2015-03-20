@@ -6,7 +6,7 @@ A demo is currently live at http://lyssner.arunmahadevan.me/.
 
 # Installation
 
-First, install all the node modules using `npm install`. Then use `node server.js` to get the server running, and open localhost on your browser at port 80.
+First, install all the node modules using `npm install`. Then use `node server.js` to get the server running, and open localhost on your browser at port 8080.
 
 # License
 

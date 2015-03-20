@@ -16,8 +16,16 @@ var PartnerListener = function () {
     };
 };
 util.inherits( PartnerListener, EventEmitter );
+var app;
+if (process.env.NODE_ENV !== 'production') {
+    // runs on port 8080 when running locally
+    app = connect().use(connect.static('public')).listen(8080);
+}
+else {
+    // runs on port 80 during production
+    app = connect().use(connect.static('public')).listen(80);
+}
 
-var app = connect().use(connect.static('public')).listen(80);
 var chat_room = io.listen(app);
 var venters = [];
 var listeners = [];
