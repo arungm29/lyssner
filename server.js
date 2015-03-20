@@ -13,33 +13,28 @@ var EventEmitter = require('events').EventEmitter;
 var PartnerListener = function () {
     this.wakeUp = function ( partnerSocket ) {
         this.emit('wakeUp', partnerSocket );
-    }
-}
+    };
+};
 util.inherits( PartnerListener, EventEmitter );
 
-var app = connect().use(connect.static('public')).listen(80);
+var app = connect().use(connect.static('public')).listen(8080);
 var chat_room = io.listen(app);
-var index = -1;
 var venters = [];
 var listeners = [];
 
 chat_room.sockets.on('connection', function (socket) {
     socket.on('identify', function(data) {
-        // venters are true
-        // listeners are false
-        chattype = data.chattype;
-
         // who are we chatting with
         var partner;
         //to check for the case when the client is in the queue
         var wokenUp = false;
-
+        chattype = data.chattype;
         // check the opposite queue. if someone is waiting, match them.
         if ( ( chattype ? listeners : venters ).length > 0 ){
             // get the first partner from the array, assign it, and slice it
             // FIFO FTW
             var queuedPartner = ( chattype ? listeners : venters ).shift();
-            partner = queuedPartner.partnerSocket
+            partner = queuedPartner.partnerSocket;
             socket.emit('foundpartner', {
                 message: "You're now connected to a " + (!chattype ? 'venter' : 'listener') + "."
             });
@@ -60,7 +55,7 @@ chat_room.sockets.on('connection', function (socket) {
             });
 
             if (!wokenUp) {
-                //if the client is waiting to be paired and decides to disconnect for whatever reason
+                // if the client is waiting to be paired and decides to disconnect for whatever reason
                 socket.on('disconnect', function () {
                     // remove the client from the queue
                     if(chattype) {
@@ -89,9 +84,6 @@ chat_room.sockets.on('connection', function (socket) {
 
         // relies on partner being in scope
         function setUpChatEvents() {
-            
-            
-
             socket.on('chat', function (data) {
                 partner.emit('chat', {
                     message: data.message
@@ -120,7 +112,5 @@ chat_room.sockets.on('connection', function (socket) {
                 });
             });
         }
-    });
-
-    
+    }); 
 });
