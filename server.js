@@ -17,7 +17,7 @@ var PartnerListener = function () {
 };
 util.inherits( PartnerListener, EventEmitter );
 
-var app = connect().use(connect.static('public')).listen(8080);
+var app = connect().use(connect.static('public')).listen(80);
 var chat_room = io.listen(app);
 var venters = [];
 var listeners = [];
