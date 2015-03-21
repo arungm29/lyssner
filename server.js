@@ -1,4 +1,4 @@
-var io = require('socket.io'),
+var io = require('socket.io')(),
     connect = require('connect');
 
 // required to set up custom event emitters.
@@ -27,63 +27,97 @@ else {
 }
 
 var chat_room = io.listen(app);
+var statsocket = io.of('/stats');
 var venters = [];
 var listeners = [];
+var chatting = 0;
 
 chat_room.sockets.on('connection', function (socket) {
     socket.on('identify', function(data) {
         // who are we chatting with
-        var partner;
         //to check for the case when the client is in the queue
-        var wokenUp = false;
-        chattype = data.chattype;
+        socket.wokenUp = false;
+        socket.chattype = data.chattype;
+        statsocket.emit('updatechatting', {
+            count: chatting
+        });
+        statsocket.emit('updateventer', {
+            count: venters.length
+        });
+        statsocket.emit('updatelistener', {
+            count: listeners.length
+        });
+
         // check the opposite queue. if someone is waiting, match them.
-        if ( ( chattype ? listeners : venters ).length > 0 ){
+        if ( ( socket.chattype ? listeners : venters ).length > 0 ){
             // get the first partner from the array, assign it, and slice it
             // FIFO FTW
-            var queuedPartner = ( chattype ? listeners : venters ).shift();
-            partner = queuedPartner.partnerSocket;
+            socket.partnerObject = ( socket.chattype ? listeners : venters ).shift();
+            socket.partner = socket.partnerObject.partnerSocket;
+            chatting+= 2;
+            statsocket.emit('updatechatting', {
+                count: chatting
+            });
+            statsocket.emit('updateventer', {
+                count: venters.length
+            });
+            statsocket.emit('updatelistener', {
+                count: listeners.length
+            });
             socket.emit('foundpartner', {
-                message: "You're now connected to a " + (!chattype ? 'venter' : 'listener') + "."
+                message: "You're now connected to a " + (!socket.chattype ? 'venter' : 'listener') + "."
             });
             // now we can set up actual chat events.
             setUpChatEvents();
 
             // and let our partner know to set up actual chat events.
             // wakeUp() forces the wakeup event on the listener object
-            queuedPartner.partnerListener.wakeUp( socket );
+            socket.partnerObject.partnerListener.wakeUp( socket );
         } else {
-            // if no one is waiting, we add a custom event listener so we know when we're matched with a partner.
+            socket.wokenUp = false;
             var partnerListener = new PartnerListener();
-            wokenUp = false;
             // then we add ourselves to the queue, sending a reference to the event listener with it
-            ( chattype ? venters : listeners ).push({ 'partnerSocket': socket, 'partnerListener': partnerListener });
+            ( socket.chattype ? venters : listeners ).push({ 'partnerSocket': socket, 'partnerListener': partnerListener });
             socket.emit('entrance', {
-                message: "We're finding you a " + ( !chattype ? 'venter' : 'listener' ) + "."
+                message: "We're finding you a " + ( !socket.chattype ? 'venter' : 'listener' ) + "."
             });
-
-            if (!wokenUp) {
-                // if the client is waiting to be paired and decides to disconnect for whatever reason
-                socket.on('disconnect', function () {
-                    // remove the client from the queue
-                    if(chattype) {
+            if (socket.chattype) {
+                statsocket.emit('updateventer', {
+                    count: venters.length
+                });
+            }
+            else {
+                statsocket.emit('updatelistener', {
+                    count: listeners.length
+                });
+            }
+            // if the client is waiting to be paired and decides to disconnect for whatever reason
+            socket.on('disconnect', function () {
+                // remove the client from the queue
+                if(!socket.wokenUp) {
+                    if(socket.chattype) {
                         venters = venters.filter(function (el) {
-                            return el.partnerSocket !== socket;
+                            return el.partnerSocket.id !== socket.id;
+                        });
+                        statsocket.emit('updateventer', {
+                            count: venters.length
                         });
                     }
                     else {
                         listeners = listeners.filter(function (el) {
-                            return el.partnerSocket !== socket;
+                            return el.partnerSocket.id !== socket.id;
+                        });
+                        statsocket.emit('updatelistener', {
+                            count: listeners.length
                         });
                     }
-                });
-            }
+                }
+            });
 
             partnerListener.once('wakeUp', function ( partnerSocket ) {
-                wokenUp = true;
-                partner = partnerSocket;
+                socket.partner = partnerSocket;
                 socket.emit('foundpartner', {
-                    message: "You're now connected to a " + (chattype ? 'venter' : 'listener') + "."
+                    message: "You're now connected to a " + (socket.chattype ? 'listener' : 'venter') + "."
                 });
                 setUpChatEvents();
             });
@@ -92,32 +126,38 @@ chat_room.sockets.on('connection', function (socket) {
 
         // relies on partner being in scope
         function setUpChatEvents() {
+            socket.wokenUp = true;
             socket.on('chat', function (data) {
-                partner.emit('chat', {
+                socket.partner.emit('chat', {
                     message: data.message
                 });
             });
 
             socket.on('typing', function (data) {
-                partner.emit('is typing', {
+                socket.partner.emit('is typing', {
                     message: data.message
                 });
             });
 
             socket.on('clearedtextfield', function () {
-                partner.emit('clearedtextfield');
+                socket.partner.emit('clearedtextfield');
             });
 
             socket.on('stoppedtyping', function (data) {
-                partner.emit('stopped', {
+                socket.partner.emit('stopped', {
                     message: data.message
                 });
             });
 
             socket.on('disconnect', function () {
-                partner.emit('exit', {
+                chatting--;
+                statsocket.emit('updatechatting', {
+                    count: chatting
+                });
+                socket.partner.emit('exit', {
                     message: 'Your partner has disconnected.'
                 });
+                socket.partner.disconnect();
             });
         }
     }); 

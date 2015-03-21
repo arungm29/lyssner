@@ -15,6 +15,7 @@
         var typing = false;
         var timeout;
         var socket = io.connect(window.location.host);
+        var statsocket = io(window.location.host + '/stats');
         // for HTML escaping
         var entityMap = {
         "&": "&amp;",
@@ -27,10 +28,12 @@
 
         // DOM changes
         $("article").remove();
+        $(".stats").css("display", "block");
         $('<div class="logwrapper" style="top: 81px;"><div class="logbox"><div id="box" style="position: relative; min-height: 100%;"><div class="logitem"><p class="statuslog">Connecting...</p></div></div></div></div><div class="controlwrapper"><table class="controltable" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="chatmsgcell"><div class="chatmsgwrapper"><textarea id="chatmsg" cols="80" rows="3" disabled></textarea></div></td><td class="sendbthcell"><div class="sendbtnwrapper"><button id="sendbtn">Send<div class="btnkbshortcut">Enter</div></button></div></td></tr></tbody></table></div>').insertAfter('.l-header');
         $('.l-site-header').css("width", "auto");
 
         // Socket events
+
         socket.emit( 'identify', { 'chattype': chattype } );
 
         socket.on('entrance', function (data) {
@@ -74,6 +77,18 @@
             $("#typing").remove();
             document.getElementById("box").innerHTML += '<div class="logitem"><p class="strangermsg"><strong class="msgsource">Stranger:</strong> <span>' + data.message + "</span></p></div>";
             $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
+        });
+
+        statsocket.on('updatechatting', function (data) {
+            document.getElementById("chatting").innerHTML = data.count;
+        });
+
+        statsocket.on('updateventer', function (data) {
+            document.getElementById("ventcount").innerHTML = data.count;
+        });
+
+        statsocket.on('updatelistener', function (data) {
+            document.getElementById("listencount").innerHTML = data.count;
         });
 
         // Event handlers
