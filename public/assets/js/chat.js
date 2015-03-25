@@ -16,6 +16,7 @@
         var timeout;
         var socket = io.connect(window.location.host);
         var statsocket = io(window.location.host + '/stats');
+        var unread = 0;
         // for HTML escaping
         var entityMap = {
         "&": "&amp;",
@@ -26,11 +27,35 @@
         "/": '&#x2F;'
         };
 
+        // To check if tab is active or not
+        var vis = (function(){
+            var stateKey, eventKey, keys = {
+                hidden: "visibilitychange",
+                webkitHidden: "webkitvisibilitychange",
+                mozHidden: "mozvisibilitychange",
+                msHidden: "msvisibilitychange"
+            };
+            for (stateKey in keys) {
+                if (stateKey in document) {
+                    eventKey = keys[stateKey];
+                    break;
+                }
+            }
+            return function(c) {
+                if (c) document.addEventListener(eventKey, c);
+                return !document[stateKey];
+            }
+        })();
+
+
         // DOM changes
         $("article").remove();
         $(".stats").css("display", "block");
         $('<div class="logwrapper" style="top: 81px;"><div class="logbox"><div id="box" style="position: relative; min-height: 100%;"><div class="logitem"><p class="statuslog">Connecting...</p></div></div></div></div><div class="controlwrapper"><table class="controltable" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="chatmsgcell"><div class="chatmsgwrapper"><textarea id="chatmsg" cols="80" rows="3" disabled></textarea></div></td><td class="sendbthcell"><div class="sendbtnwrapper"><button id="sendbtn">Send<div class="btnkbshortcut">Enter</div></button></div></td></tr></tbody></table></div>').insertAfter('.l-header');
         $('.l-site-header').css("width", "auto");
+        var notif = document.createElement('audio');
+        notif.setAttribute('src', 'assets/media/notif.mp3');
+        notif.setAttribute('preload', 'auto');
 
         // Socket events
 
@@ -77,6 +102,11 @@
             $("#typing").remove();
             document.getElementById("box").innerHTML += '<div class="logitem"><p class="strangermsg"><strong class="msgsource">Stranger:</strong> <span>' + data.message + "</span></p></div>";
             $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
+            if (!vis()) {
+                notif.play();
+                unread++;
+                document.title = "(" + unread + ") Lyssner | Vent your heart out";
+            }
         });
 
         statsocket.on('updatechatting', function (data) {
@@ -92,6 +122,12 @@
         });
 
         // Event handlers
+        vis(function(){
+            if (vis() && unread !== 0) {
+                document.title = "Lyssner | Vent your heart out";
+            }
+        });
+
         document.getElementById("sendbtn").onclick = function () {
             if (!($("#chatmsg").is(':disabled'))) {
                 $("#chatmsg").focus();
