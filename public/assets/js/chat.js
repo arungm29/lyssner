@@ -124,6 +124,7 @@
         // Event handlers
         vis(function(){
             if (vis() && unread !== 0) {
+                unread = 0;
                 document.title = "Lyssner | Vent your heart out";
             }
         });
