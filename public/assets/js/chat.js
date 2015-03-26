@@ -14,9 +14,11 @@
         var txt = "";
         var typing = false;
         var timeout;
-        var socket = io.connect(window.location.host);
+        var socket = io.connect(window.location.host, {'forceNew':true });
         var statsocket = io(window.location.host + '/stats');
         var unread = 0;
+        var once = false;
+        var twice = false;
         // for HTML escaping
         var entityMap = {
         "&": "&amp;",
@@ -51,7 +53,7 @@
         // DOM changes
         $("article").remove();
         $(".stats").css("display", "block");
-        $('<div class="logwrapper" style="top: 81px;"><div class="logbox"><div id="box" style="position: relative; min-height: 100%;"><div class="logitem"><p class="statuslog">Connecting...</p></div></div></div></div><div class="controlwrapper"><table class="controltable" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="chatmsgcell"><div class="chatmsgwrapper"><textarea id="chatmsg" cols="80" rows="3" disabled></textarea></div></td><td class="sendbthcell"><div class="sendbtnwrapper"><button id="sendbtn">Send<div class="btnkbshortcut">Enter</div></button></div></td></tr></tbody></table></div>').insertAfter('.l-header');
+        $('<div class="logwrapper" style="top: 81px;"><div class="logbox"><div id="box" style="position: relative; min-height: 100%;"><div class="logitem"><p class="statuslog">Connecting...</p></div></div></div></div><div class="controlwrapper"><table class="controltable" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td class="disconnectbtncell"><div class="disconnectbtnwrapper newbtn"><button id="disconnectbtn">Disconnect<div class="btnkbshortcut">Esc</div></button></div></td><td class="chatmsgcell"><div class="chatmsgwrapper"><textarea id="chatmsg" cols="80" rows="3" disabled></textarea></div></td><td class="sendbthcell"><div class="sendbtnwrapper"><button id="sendbtn" disabled>Send<div class="btnkbshortcut">Enter</div></button></div></td></tr></tbody></table></div>').insertAfter('.l-header');
         $('.l-site-header').css("width", "auto");
         var notif = document.createElement('audio');
         notif.setAttribute('src', 'assets/media/notif.mp3');
@@ -59,55 +61,7 @@
 
         // Socket events
 
-        socket.emit( 'identify', { 'chattype': chattype } );
-
-        socket.on('entrance', function (data) {
-            $(".logitem").replaceWith('<div class="logitem"><p class="statuslog">' + data.message + '</p></div>');
-        });
-
-        socket.on('foundpartner', function (data) {
-            $(".logitem").replaceWith('<div class="logitem"><p class="statuslog">' + data.message + '</p></div>');
-            document.getElementById("chatmsg").disabled = false;
-            $("#chatmsg").focus();
-        });
-
-        
-        socket.on('exit', function (data) {
-            document.getElementById("box").innerHTML += '<div class="logitem"><p class="statuslog">' + data.message + '</p></div>';
-            $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
-            document.getElementById("chatmsg").setAttribute("disabled", "true");
-        });
-
-        socket.on('is typing', function (data) {
-            if (document.getElementById("typing")) {
-                $("#typing").replaceWith('<div class="logitem" id="typing"><p class="statuslog">' + data.message + '...</p></div>');
-                $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
-            } else {
-                document.getElementById("box").innerHTML += '<div class="logitem" id="typing"><p class="statuslog">' + data.message + '...</p></div>';
-                $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
-            }
-        });
-
-        socket.on('clearedtextfield', function () {
-            $("#typing").remove();
-            clearTimeout(timeout);
-        });
-
-        socket.on('stopped', function (data) {
-            $("#typing").replaceWith('<div class="logitem" id="typing"><p class="statuslog">' + data.message + '</p></div>');
-            $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
-        });
-
-        socket.on('chat', function (data) {
-            $("#typing").remove();
-            document.getElementById("box").innerHTML += '<div class="logitem"><p class="strangermsg"><strong class="msgsource">Stranger:</strong> <span>' + data.message + "</span></p></div>";
-            $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
-            if (!vis()) {
-                notif.play();
-                unread++;
-                document.title = "(" + unread + ") Lyssner | Vent your heart out";
-            }
-        });
+        setUpChatEvents();
 
         statsocket.on('updatechatting', function (data) {
             document.getElementById("chatting").innerHTML = data.count;
@@ -140,6 +94,17 @@
                 }
             }
         };
+
+        document.getElementById("disconnectbtn").onclick = disconnect;
+
+
+        $(document).keyup(function (e) {
+            console.log("outside if");
+            if (e.keyCode == 27) {
+                console.log("inside if");
+                disconnect();
+            }
+        });
 
         $("#chatmsg").keypress(function (e) {
             if (e.keyCode != 13) {
@@ -174,6 +139,65 @@
             }
         });
 
+        function setUpChatEvents () {
+            socket.emit( 'identify', { 'chattype': chattype } );
+
+            socket.on('entrance', function (data) {
+                $(".logitem").replaceWith('<div class="logitem"><p class="statuslog">' + data.message + '</p></div>');
+            });
+
+            socket.on('foundpartner', function (data) {
+                $(".logitem").replaceWith('<div class="logitem"><p class="statuslog">' + data.message + '</p></div>');
+                window.onbeforeunload = function(){ return 'A chat is still in progress.' };
+                document.getElementById("chatmsg").disabled = false;
+                document.getElementById("sendbtn").disabled = false;
+                $("#chatmsg").focus();
+            });
+
+            
+            socket.on('exit', function (data) {
+                document.getElementById("box").innerHTML += '<div class="logitem"><p class="statuslog">' + data.message + '</p></div>';
+                $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
+                window.onbeforeunload = null;
+                document.getElementById("chatmsg").disabled = true;
+                document.getElementById("sendbtn").disabled = true;
+                document.getElementById("disconnectbtn").innerHTML = 'New Chat<div class="btnkbshortcut">Esc</div>';
+                twice = true;
+                once = true;
+            });
+
+            socket.on('is typing', function (data) {
+                if (document.getElementById("typing")) {
+                    $("#typing").replaceWith('<div class="logitem" id="typing"><p class="statuslog">' + data.message + '...</p></div>');
+                    $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
+                } else {
+                    document.getElementById("box").innerHTML += '<div class="logitem" id="typing"><p class="statuslog">' + data.message + '...</p></div>';
+                    $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
+                }
+            });
+
+            socket.on('clearedtextfield', function () {
+                $("#typing").remove();
+                clearTimeout(timeout);
+            });
+
+            socket.on('stopped', function (data) {
+                $("#typing").replaceWith('<div class="logitem" id="typing"><p class="statuslog">' + data.message + '</p></div>');
+                $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
+            });
+
+            socket.on('chat', function (data) {
+                $("#typing").remove();
+                document.getElementById("box").innerHTML += '<div class="logitem"><p class="strangermsg"><strong class="msgsource">Stranger:</strong> <span>' + data.message + "</span></p></div>";
+                $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
+                if (!vis()) {
+                    notif.play();
+                    unread++;
+                    document.title = "(" + unread + ") Lyssner | Vent your heart out";
+                }
+            });
+        }
+
         function timeoutFunction() {
             typing = false;
             socket.emit('stoppedtyping', {
@@ -199,6 +223,31 @@
             socket.emit('chat', {
                 message: escaped
             });
+        }
+
+        function disconnect () {
+            if (!once) {
+                document.getElementById("disconnectbtn").innerHTML = 'Sure?<div class="btnkbshortcut">Esc</div>';
+                once = true;
+            }
+            else if (once && !twice) {
+                socket.disconnect();
+                document.getElementById("disconnectbtn").innerHTML = 'New Chat<div class="btnkbshortcut">Esc</div>';
+                document.getElementById("box").innerHTML += '<div class="logitem"><p class="statuslog">You have disconnected.</p></div>';
+                $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
+                window.onbeforeunload = null;
+                document.getElementById("chatmsg").disabled = true;
+                document.getElementById("sendbtn").disabled = true;
+                twice = true;
+            }
+            else {
+                once = false;
+                twice = false;
+                document.getElementById("disconnectbtn").innerHTML = 'Disconnect<div class="btnkbshortcut">Esc</div>';
+                document.getElementById("box").innerHTML = '<div class="logitem"><p class="statuslog">Connecting...</p></div>';
+                socket = io.connect({forceNew: true});
+                setUpChatEvents();
+            }
         }
 
 

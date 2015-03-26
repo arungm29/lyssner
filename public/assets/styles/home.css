@@ -12,6 +12,15 @@ font-size: 16px;
 line-height: 1.5;
 }
 
+h1 {
+    margin-bottom: 30px;
+}
+
+.subtitle {
+    color: #bbb;
+    margin-bottom: 50px;
+}
+
 .l-all-but-footer {
 min-width: 100%;
 }
@@ -269,6 +278,7 @@ color: #369;
     font-family: 'droid sans', helvetica, arial, sans-serif;
     width: 7em;
     height: 5em;
+    outline: none;
     padding: 0;
     margin: 0;
     border: 0 none;
@@ -283,4 +293,29 @@ color: #369;
     margin-top: .25em;
     height: 0;
     overflow: show;
+}
+
+#disconnectbtn {
+    font-size: 1em;
+    background: white;
+    font-family: 'droid sans', helvetica, arial, sans-serif;
+    width: 7em;
+    height: 5em;
+    padding: 0;
+    outline: none;
+    margin: 0;
+    border: 0 none;
+    border-bottom-left-radius: .5em;
+    -moz-border-radius-bottomleft: .5em;
+    -webkit-border-bottom-left-radius: .5em;    
+}
+
+.disconnectbtnwrapper {
+    overflow: hidden;
+    margin-right: .5em;
+    border: 1px solid #CCC;
+    border-bottom-left-radius: .5em;
+    -moz-border-radius-bottomleft: .5em;
+    -webkit-border-bottom-left-radius: .5em;
+    background: white;
 }
