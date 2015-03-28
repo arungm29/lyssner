@@ -1,4 +1,5 @@
 (function($, document) {
+    'use strict';
     var vent = document.getElementById("vent");
     var listen = document.getElementById("listen");
     // Event handlers for home page
@@ -49,7 +50,7 @@
             return function(c) {
                 if (c) document.addEventListener(eventKey, c);
                 return !document[stateKey];
-            }
+            };
         })();
 
 
@@ -150,7 +151,7 @@
             socket.on('foundpartner', function (data) {
                 beenPaired = true;
                 $(".logitem").replaceWith('<div class="logitem"><p class="statuslog">' + data.message + '</p></div>');
-                window.onbeforeunload = function(){ return 'A chat is still in progress.' };
+                window.onbeforeunload = function(){ return 'A chat is still in progress.'; };
                 document.getElementById("chatmsg").disabled = false;
                 document.getElementById("sendbtn").disabled = false;
                 $("#chatmsg").focus();
@@ -260,6 +261,7 @@
                     });
                 }
                 else {
+                    document.getElementById("box").innerHTML += '<div class="logitem"><p class="statuslog">You have disconnected.</p></div>';
                     socket.disconnect();
                 }
                 beenPaired = false;
