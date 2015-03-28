@@ -1,12 +1,10 @@
-var io = require('socket.io')(),
-    connect = require('connect');
+'use strict';
 
-// required to set up custom event emitters.
-// this event emitter uses an emit method that is
-// unrelated to the socket.io emit method, because
-// the events are only sent and received internally
-var util = require('util');
-var EventEmitter = require('events').EventEmitter;
+var io = require('socket.io')(),
+    connect = require('connect'),
+    util = require('util'),
+    eventEmitter = require('events').EventEmitter,
+    writeToFile = require('./writeToFile.js');
 
 // more custom event setup.
 // this is the CONSTRUCTOR
@@ -15,7 +13,6 @@ var PartnerListener = function () {
         this.emit('wakeUp', partnerSocket );
     };
 };
-util.inherits( PartnerListener, EventEmitter );
 var app;
 if (process.env.NODE_ENV !== 'production') {
     // runs on port 8080 when running locally
@@ -32,12 +29,16 @@ var venters = [];
 var listeners = [];
 var chatting = 0;
 
+util.inherits( PartnerListener, eventEmitter );
+
+
 chat_room.sockets.on('connection', function (socket) {
     socket.on('identify', function(data) {
         // who are we chatting with
         //to check for the case when the client is in the queue
-        socket.wokenUp = false;
         socket.chattype = data.chattype;
+        socket.chat = "";
+        socket.wokenUp = false;
         statsocket.emit('updatechatting', {
             count: chatting
         });
@@ -124,7 +125,6 @@ chat_room.sockets.on('connection', function (socket) {
 
         }
 
-        // relies on partner being in scope
         function setUpChatEvents() {
             socket.wokenUp = true;
             socket.on('chat', function (data) {
@@ -157,7 +157,16 @@ chat_room.sockets.on('connection', function (socket) {
                 socket.partner.emit('exit', {
                     message: 'Your partner has disconnected.'
                 });
-                socket.partner.disconnect();
+            });
+
+            socket.on('log', function (data) {
+                writeToFile(data.message, function (filename) {
+                    socket.emit('log', {
+                        url: filename
+                    });
+                }, function () {
+                    socket.emit('logerror');
+                });
             });
         }
     }); 
