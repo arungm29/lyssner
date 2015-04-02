@@ -8,7 +8,7 @@ var pre = '<!doctype html><html><head><title>Lyssner Chatlog</title></head><body
 module.exports = function (data, callback, error) {
     var url = shortid.generate();
     var post = '</body></html>';
-    fs.writeFile("./public/logs/" + url + ".html", pre + data + post, function(err) {
+    fs.writeFile("./logs/" + url + ".html", pre + data + post, function(err) {
         if(err) {
             error();
             return console.log(err);

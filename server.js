@@ -16,11 +16,25 @@ var PartnerListener = function () {
 var app;
 if (process.env.NODE_ENV !== 'production') {
     // runs on port 8080 when running locally
-    app = connect().use(connect.static('public')).listen(8080);
+    app = connect().use(connect.static('public'))
+    .use('/', function(req, res, next) {
+            var body = 'Error 404: Page not found.';
+            res.statusCode = 404;
+            res.setHeader('Content-Length', body.length);
+            res.end(body);
+        }
+    ).listen(8080);
 }
 else {
     // runs on port 80 during production
-    app = connect().use(connect.static('public')).listen(80);
+    app = connect().use(connect.static('public'))
+    .use('/', function(req, res, next) {
+            var body = 'Error 404: Page not found.';
+            res.statusCode = 404;
+            res.setHeader('Content-Length', body.length);
+            res.end(body);
+        }
+    ).listen(80);
 }
 
 var chat_room = io.listen(app);
@@ -36,9 +50,10 @@ chat_room.sockets.on('connection', function (socket) {
     socket.on('identify', function(data) {
         // who are we chatting with
         //to check for the case when the client is in the queue
-        socket.chattype = data.chattype;
-        socket.chat = "";
+        socket.chattype = data.chattype;       
+        socket.chat = '<div class="logitem"><p class="statuslog">You&#39re now connected to a ' + (socket.chattype ? 'listener' : 'venter') + '.</p></div>';
         socket.wokenUp = false;
+        socket.disconnected = false;
         statsocket.emit('updatechatting', {
             count: chatting
         });
@@ -131,6 +146,8 @@ chat_room.sockets.on('connection', function (socket) {
                 socket.partner.emit('chat', {
                     message: data.message
                 });
+                socket.partner.chat+= '<div class="logitem"><p class="strangermsg"><strong class="msgsource">Stranger:</strong> <span>' + data.message + '</span></p></div>';
+                socket.chat+= '<div class="logitem"><p class="youmsg"><strong class="msgsource">You:</strong> <span>' + data.message + '</span></p></div>';
             });
 
             socket.on('typing', function (data) {
@@ -157,15 +174,17 @@ chat_room.sockets.on('connection', function (socket) {
                 socket.partner.emit('exit', {
                     message: 'Your partner has disconnected.'
                 });
-            });
-
-            socket.on('log', function (data) {
-                writeToFile(data.message, function (filename) {
-                    socket.emit('log', {
-                        url: filename
-                    });
+                socket.disconnected = true;
+                if(socket.disconnected) {
+                    socket.partner.chat+= '<div class="logitem"><p class="statuslog">Your partner has disconnected.</p></div>';
+                }
+                if(!socket.partner.disconnected) {
+                    socket.chat+= '<div class="logitem"><p class="statuslog">You have disconnected.</p></div>';
+                }
+                writeToFile(socket.chat, function (filename) {
+                    console.log("File " + filename + ".html written successfully.")
                 }, function () {
-                    socket.emit('logerror');
+                    socket.emit("File write error.");
                 });
             });
         }

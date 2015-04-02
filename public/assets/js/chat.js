@@ -20,7 +20,6 @@
         var unread = 0;
         var once = false;
         var twice = false;
-        var beenPaired = false;
         // for HTML escaping
         // copied from moustache.js
         var entityMap = {
@@ -149,7 +148,6 @@
             });
 
             socket.on('foundpartner', function (data) {
-                beenPaired = true;
                 $(".logitem").replaceWith('<div class="logitem"><p class="statuslog">' + data.message + '</p></div>');
                 window.onbeforeunload = function(){ return 'A chat is still in progress.'; };
                 document.getElementById("chatmsg").disabled = false;
@@ -159,21 +157,10 @@
 
             
             socket.on('exit', function (data) {
-                beenPaired = false;
-                $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
                 window.onbeforeunload = null;
                 document.getElementById("box").innerHTML += '<div class="logitem"><p class="statuslog">' + data.message + '</p></div>';
-                socket.emit('log', {
-                    message: document.getElementById("box").innerHTML
-                });
-                socket.on('log', function (message) {
-                    document.getElementById("box").innerHTML += '<div class="logitem"><p class="statuslog">Liked this chat? Access the chatlog <a href="/logs/' + message.url + '.html" target="_blank">here</a>.</p></div>';
-                    socket.disconnect();
-                });
-                socket.on('logerror', function () {
-                    document.getElementById("box").innerHTML += '<div class="logitem"><p class="statuslog">Sorry! We could not generate a chatlog for you.</p></div>';
-                    socket.disconnect();
-                });
+                $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
+                socket.disconnect();
                 document.getElementById("chatmsg").disabled = true;
                 document.getElementById("sendbtn").disabled = true;
                 document.getElementById("disconnectbtn").innerHTML = 'New Chat<div class="btnkbshortcut">Esc</div>';
@@ -246,25 +233,8 @@
                 once = true;
             }
             else if (once && !twice) {
-                if (beenPaired) {
-                    document.getElementById("box").innerHTML += '<div class="logitem"><p class="statuslog">You have disconnected.</p></div>';
-                    socket.emit('log', {
-                        message: document.getElementById("box").innerHTML
-                    });
-                    socket.on('log', function (data) {
-                        document.getElementById("box").innerHTML += '<div class="logitem"><p class="statuslog">Liked this chat? Access the chatlog <a href="/logs/' + data.url + '.html" target="_blank">here</a>.</p></div>';
-                        socket.disconnect();
-                    });
-                    socket.on('logerror', function () {
-                        document.getElementById("box").innerHTML += '<div class="logitem"><p class="statuslog">Sorry! We could not generate a chatlog for you.</p></div>';
-                        socket.disconnect();
-                    });
-                }
-                else {
-                    document.getElementById("box").innerHTML += '<div class="logitem"><p class="statuslog">You have disconnected.</p></div>';
-                    socket.disconnect();
-                }
-                beenPaired = false;
+                document.getElementById("box").innerHTML += '<div class="logitem"><p class="statuslog">You have disconnected.</p></div>';
+                socket.disconnect();
                 document.getElementById("disconnectbtn").innerHTML = 'New Chat<div class="btnkbshortcut">Esc</div>';
                 $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
                 window.onbeforeunload = null;
@@ -291,3 +261,4 @@
         }
     }
 }(window.jQuery, document));
+ 
