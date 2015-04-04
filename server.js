@@ -184,7 +184,7 @@ chat_room.sockets.on('connection', function (socket) {
                 writeToFile(socket.chat, function (filename) {
                     console.log("File " + filename + ".html written successfully.")
                 }, function () {
-                    socket.emit("File write error.");
+                    console.log("File write error.");
                 });
             });
         }
