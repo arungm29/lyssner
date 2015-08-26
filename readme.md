@@ -1,7 +1,7 @@
 # Overview
 Lyssner is an omegle-like anonymous chat service built exclusively for the students of Manipal University. The user can choose to be a listener or a venter. Listeners and venters are then paired up, and are allowed to talk to each other.
 
-The site is currently live at http://lyssner.arunmahadevan.me/.
+The site is currently live at https://lyssner.co/.
 
 
 # Installation
