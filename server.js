@@ -50,8 +50,8 @@ chat_room.sockets.on('connection', function (socket) {
     socket.on('identify', function(data) {
         // who are we chatting with
         //to check for the case when the client is in the queue
-        socket.chattype = data.chattype;
-        socket.chat = '<div class="logitem"><p class="statuslog">You&#39re now connected to a ' + (socket.chattype ? 'respondent' : 'enquirer') + '.</p></div>';
+        socket.chattype = data.chattype;       
+        socket.chat = '<div class="logitem"><p class="statuslog">You&#39re now connected to a ' + (socket.chattype ? 'listener' : 'venter') + '.</p></div>';
         socket.wokenUp = false;
         socket.disconnected = false;
         statsocket.emit('updatechatting', {
@@ -81,7 +81,7 @@ chat_room.sockets.on('connection', function (socket) {
                 count: listeners.length
             });
             socket.emit('foundpartner', {
-                message: "You're now connected to a " + (!socket.chattype ? 'enquirer' : 'respondent') + "."
+                message: "You're now connected to a " + (!socket.chattype ? 'venter' : 'listener') + "."
             });
             // now we can set up actual chat events.
             setUpChatEvents();
@@ -95,7 +95,7 @@ chat_room.sockets.on('connection', function (socket) {
             // then we add ourselves to the queue, sending a reference to the event listener with it
             ( socket.chattype ? venters : listeners ).push({ 'partnerSocket': socket, 'partnerListener': partnerListener });
             socket.emit('entrance', {
-                message: "We're finding you a " + ( !socket.chattype ? 'enquirer' : 'respondent' ) + "."
+                message: "We're finding you a " + ( !socket.chattype ? 'venter' : 'listener' ) + "."
             });
             if (socket.chattype) {
                 statsocket.emit('updateventer', {
@@ -133,7 +133,7 @@ chat_room.sockets.on('connection', function (socket) {
             partnerListener.once('wakeUp', function ( partnerSocket ) {
                 socket.partner = partnerSocket;
                 socket.emit('foundpartner', {
-                    message: "You're now connected to a " + (socket.chattype ? 'respondent' : 'enquirer') + "."
+                    message: "You're now connected to a " + (socket.chattype ? 'listener' : 'venter') + "."
                 });
                 setUpChatEvents();
             });
@@ -188,5 +188,5 @@ chat_room.sockets.on('connection', function (socket) {
                 });
             });
         }
-    });
+    }); 
 });

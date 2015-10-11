@@ -82,7 +82,7 @@
         vis(function(){
             if (vis() && unread !== 0) {
                 unread = 0;
-                document.title = "Lyssner | Get an answer to anything";
+                document.title = "Lyssner | Vent your heart out";
             }
         });
 
@@ -155,7 +155,7 @@
                 $("#chatmsg").focus();
             });
 
-
+            
             socket.on('exit', function (data) {
                 window.onbeforeunload = null;
                 document.getElementById("box").innerHTML += '<div class="logitem"><p class="statuslog">' + data.message + '</p></div>';
@@ -195,7 +195,7 @@
                 if (!vis()) {
                     notif.play();
                     unread++;
-                    document.title = "(" + unread + ") Lyssner | Get an answer to anything";
+                    document.title = "(" + unread + ") Lyssner | Vent your heart out";
                 }
             });
         }
@@ -217,7 +217,7 @@
             if (document.getElementById("typing")) {
                 document.getElementById("box").insertBefore(new_div, document.getElementById("typing"));
                 $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
-            }
+            } 
             else {
                 document.getElementById("box").innerHTML += '<div class="logitem"><p class="youmsg"><strong class="msgsource">You:</strong> <span>' + escaped + "</span></p></div>";
                 $(".logbox").scrollTop($(".logbox")[0].scrollHeight);
@@ -261,4 +261,4 @@
         }
     }
 }(window.jQuery, document));
-
+ 
